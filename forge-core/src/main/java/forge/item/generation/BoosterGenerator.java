@@ -431,7 +431,16 @@ public class BoosterGenerator {
                 slotType = slotType.substring(0, slotType.length() - 1);
             }
 
-            BoosterSlot boosterSlot = boosterSlots.get(slotType);
+            if (boosterSlot.hasPairs()) {
+                if ((numCards & 1) != 0) {
+                    throw new IllegalArgumentException(
+                            "Paired booster slot '" + slotType + "' must allocate an even number of cards");
+                }
+                for (int i = 0; i < numCards; i += 2) {
+                    paperCardsForPair(result, template.getEdition(), boosterSlot.getRandomPair(), convertAllToFoil);
+                }
+                continue;
+            }
 
             List<PaperCard> paperCards = Lists.newArrayList();
             for(Map.Entry<String, Long> entry : bulkSlotReplacement(boosterSlot, numCards).entrySet()) {
@@ -469,6 +478,30 @@ public class BoosterGenerator {
         }
 
         return result;
+    }
+
+    private static void paperCardsForPair(List<PaperCard> result, String setCode, Pair<String, String> pair, boolean foil) {
+        result.add(randomCardFromSheetExpression(pair.getLeft(), setCode, foil));
+        result.add(randomCardFromSheetExpression(pair.getRight(), setCode, foil));
+    }
+
+    private static PaperCard randomCardFromSheetExpression(String sheetExpression, String setCode, boolean foil) {
+        String determineSheet = sheetExpression;
+        boolean convertToFoil = foil;
+        if (determineSheet.endsWith("+")) {
+            determineSheet = determineSheet.substring(0, determineSheet.length() - 1);
+            convertToFoil = true;
+        }
+
+        PrintSheet ps;
+        try {
+            ps = getPrintSheet(determineSheet + " " + setCode);
+        } catch (Exception e) {
+            ps = getPrintSheet(determineSheet);
+        }
+
+        PaperCard card = ps.random(1, true).get(0);
+        return convertToFoil ? card.getFoiled() : card;
     }
 
     private static Map<String, Long> bulkSlotReplacement(BoosterSlot boosterSlot, int numCards) {
