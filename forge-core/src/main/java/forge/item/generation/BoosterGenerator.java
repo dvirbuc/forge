@@ -432,14 +432,16 @@ public class BoosterGenerator {
             }
 
             if (boosterSlot.hasPairs()) {
-                if ((numCards & 1) != 0) {
-                    throw new IllegalArgumentException(
-                            "Paired booster slot '" + slotType + "' must allocate an even number of cards");
-                }
-                for (int i = 0; i < numCards; i += 2) {
+                int pairCards = numCards - (numCards % 2);
+                for (int i = 0; i < pairCards; i += 2) {
                     paperCardsForPair(result, template.getEdition(), boosterSlot.getRandomPair(), convertAllToFoil);
                 }
-                continue;
+                numCards -= pairCards;
+                if (numCards == 0) {
+                    continue;
+                }
+                // A paired slot may have one independent remainder card, e.g. 3 cards
+                // means one linked pair plus one normal slot selection.
             }
 
             List<PaperCard> paperCards = Lists.newArrayList();
